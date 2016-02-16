@@ -363,16 +363,11 @@ class IndustrialRobotSimulatorNode():
             rospy.logdebug('Received trajectory with %s points, executing callback', str(len(msg_in.points)))
 
             if self.motion_ctrl.is_in_motion():
-                if len(msg_in.points) > 0:
-                    rospy.logerr('Received trajectory while still in motion, trajectory splicing not supported')
-                else:
-                    rospy.logdebug('Received empty trajectory while still in motion, stopping current trajectory')
-                self.motion_ctrl.stop()
-
-            else:
-                for point in msg_in.points:
-                    point = self._to_controller_order(msg_in.joint_names, point)
-                    self.motion_ctrl.add_motion_waypoint(point)
+                with self.motion_buffer.mutex:
+                    self.motion_buffer.queue.clear()
+            for point in msg_in.points:
+                point = self._to_controller_order(msg_in.joint_names, point)
+                self.motion_ctrl.add_motion_waypoint(point)
 
         except Exception as e:
             rospy.logerr('Unexpected exception: %s', e)
