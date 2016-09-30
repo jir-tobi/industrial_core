@@ -99,6 +99,11 @@ class MotionControllerSimulator():
     def add_motion_waypoint(self, point):
         self.motion_buffer.put(point)
 
+    """
+    """
+    def clear_motion_buffer(self):
+        with self.motion_buffer.mutex:
+            self.motion_buffer.queue.clear()
 
     """
     """
@@ -363,8 +368,7 @@ class IndustrialRobotSimulatorNode():
             rospy.logdebug('Received trajectory with %s points, executing callback', str(len(msg_in.points)))
 
             if self.motion_ctrl.is_in_motion():
-                with self.motion_buffer.mutex:
-                    self.motion_buffer.queue.clear()
+                self.motion_ctrl.clear_motion_buffer()
             for point in msg_in.points:
                 point = self._to_controller_order(msg_in.joint_names, point)
                 self.motion_ctrl.add_motion_waypoint(point)
